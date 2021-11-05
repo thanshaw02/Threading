@@ -1,0 +1,172 @@
+Listing psort.cc...
+
+#include "psort.h"
+#include <string>
+#include <iostream>
+#include <pthread.h>
+
+using namespace std;
+
+/*
+    - I'm pretty stuck, can't seem to get this to work
+    - I know my MergeSort is correct for the most part, minus the threading. It spits out all of the correct starting, ending, and middle indices that I would expect to get
+    - But when I do get some kind of output it's either bits of the original array or just a core dump
+*/
+
+void Merge(string *a, int aStart, int aLen, string* b, int bStart, int bLen) {
+
+    int aIndex = 0, bIndex = 0, mergedArr = aStart;
+
+    while(aIndex < aLen && bIndex < bLen ) {
+        if(a[aStart] <= b[bStart]) {
+            ans[mergedArr] = a[aIndex];
+            aIndex++;
+        }
+        else {
+            ans[mergedArr] = b[bIndex];
+            bIndex++;
+        }
+        mergedArr++;
+    }
+
+    while(aIndex < aLen) {
+        ans[mergedArr] = a[aIndex];
+        aIndex++;
+        mergedArr++;
+    }
+
+    while(bIndex < bLen) {
+        ans[mergedArr] = b[bIndex];
+        bIndex++;
+        mergedArr++;
+    }
+}
+
+// So I originally was just reusing a global thread to create all of the other threads, but I decided to try creating a new thread with each recursive call instead
+// Not sure if this works, I think that's what we need to do but I haven't been able to get any code working, so can't test it
+// Also trying to pass three things to this method, since I need to pass at least two variables, "start" and "end/length" - I'm using a struct for this
+// I don't think I need to pass the array, I think I can just use the "coordinates" that my method comes up with to check the gloab array
+// But no luck with that, so I'm not sure
+void* MergeSort(void* args) {
+    MergeSortData temp = *(MergeSortData*)args;
+
+    if(temp.start < temp.end) {
+    pthread_t myThread1;
+    pthread_t myThread2;
+    MergeSortData data1, data2;
+
+    // Splitting the array
+    int mid = findMid(temp.start, temp.end);
+    data1 = { &arr[temp.start], temp.start, mid - 1};
+    data2 = { &arr[mid], mid, temp.end };
+
+    // Recursively calling MergeSort
+    // I was only using one thread, but haven't been able to get it to work so I switched to two hoping for better luck
+    pthread_create(&myThread1, nullptr, MergeSort, &data1);
+    pthread_create(&myThread2, nullptr, MergeSort, &data2);
+    pthread_join(myThread1, nullptr);
+    pthread_join(myThread2, nullptr);
+
+    // Merging the split "arrays"
+    Merge(data1.array, data1.start, (data1.end - data1.start), data2.array, data2.start, (data2.end - data2.start));
+
+    }
+
+    return nullptr;
+}
+
+void printArray(string* arr, int len) {
+    for(int i = 0; i < len; i++) cout << arr[i] << " ";
+    cout << "\n";
+    cout.flush();
+}
+
+int main() {
+
+    // Get the size of the array, and fill the array with user input
+    getline(cin, size);
+
+    arr = new string[stoi(size)];
+    ans = new string[stoi(size)];
+
+    for(int i = 0; i < stoi(size); i++) {
+        getline(cin, input);
+        arr[i] = input;
+    }
+
+    MergeSortData data = { arr, 0, stoi(size) - 1 };
+
+    MergeSort(&data);
+
+    printArray(ans, stoi(size));
+
+    return 0;
+}
+
+/*
+
+// DEBUGGING
+    cout << "Hit MergeSort()\n";
+    cout.flush();
+    cout << "Temp->start:\t" << temp.start << "\n";
+    cout.flush();
+    cout << "Temp->end:\t" << temp.end << "\n\n";
+    cout.flush();
+    printArray(temp.array, temp.end - temp.start);
+
+*/
+
+
+
+Listing psort.h...
+
+#ifndef _PSORT_
+#define _PSORT_
+
+#include "psort.h"
+#include <string>
+#include <iostream>
+#include <pthread.h>
+
+using namespace std;
+
+struct MergeSortData {
+    string* array;
+    int start, end; // Start is the beginning of the array is, and end is the length or where the array ends
+};
+
+string input, size;
+string* arr;
+string* ans;
+pthread_t thread;
+
+int main();
+void* MergeSort(void* args);
+void Merge(string *a, int aStart, int aLen, string* b, int bStart, int bLen);
+void printArray(string* arr, int len);
+int findMid(int start, int end) { return (start + end) / 2; }
+
+
+#endif
+
+rm: cannot remove '*.in': No such file or directory
+Compiling...
+
+
+Running Data Case 1...
+/bin/bash: line 9:   694 Segmentation fault      ./pg2 < PG2-1.in
+
+
+Running Data Case 2...
+
+
+
+Running Data Case 3...
+
+To my naked eye, your Merge method is hosed.  You are confusing the roles of aIndex and aStart.  In fact, it looks like you didn't settle on a consistent 
+way to represent partial arrays.  (Array, start index, end index) would work.  (Address of first index, len) would also work, but it looks like you are 
+switching between the two, and it looks to me that you have introduced some typos while doing this.
+
+10/50.
+
+Fix by Wednesday 22 September 2021 10:00 A.M. EDT.
